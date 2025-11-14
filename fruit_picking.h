@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+constexpr const char* DEFAULT_PICKER_NAME = "Anonim";
+
 enum class Taste { SWEET, SOUR };
 
 enum class Size { LARGE, MEDIUM, SMALL };
@@ -42,12 +44,7 @@ class Fruit {
 
 class Picker {
    public:
-    Picker(const std::string&);
-    Picker(std::string_view);
-    // Picker(Picker&&) = default;
-
-    // istniejący konstruktor
-    Picker(const char* name = "Anonim");
+    Picker(std::string_view = DEFAULT_PICKER_NAME);
     const std::string& get_name() const { return picker_name; }
     std::size_t count_fruits() const { return collected_fruits.size(); }
     std::size_t count_taste(Taste taste) const;
@@ -158,25 +155,8 @@ inline std::ostream& operator<<(std::ostream& os, const Fruit& fruit) {
     return os;
 }
 
-inline Picker::Picker(const char* name) {
-    if (name != nullptr && name[0] != '\0') {
-        picker_name = name;
-    } else {
-        picker_name = "Anonim";
-    }
-}
-
-inline Picker::Picker(const std::string& name) {
-    // delegujemy do konstrukcji wewnętrznej (lub ustawiamy pole)
-    name == "" ? picker_name = "Anonim" : picker_name = name;
-}
-
-inline Picker::Picker(std::string_view name) {
-    // bezpiecznie przekonwertuj do std::string (lub przypisz bezpośrednio jeśli
-    // pole to string_view)
-    std::string tmp{name};
-    *this = Picker(tmp.c_str());
-}
+inline Picker::Picker(std::string_view name)
+    : picker_name(name.empty() ? DEFAULT_PICKER_NAME : std::string(name)) {}
 
 inline std::size_t Picker::count_taste(Taste taste) const {
     std::size_t count = 0;
