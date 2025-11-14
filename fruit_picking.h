@@ -99,15 +99,15 @@ class Ranking {
     std::vector<Picker> pickers;
 };
 
-inline constexpr Fruit::Fruit(Taste taste, Size size, Quality quality)
+constexpr Fruit::Fruit(Taste taste, Size size, Quality quality)
     : fruit_taste(taste), fruit_size(size), fruit_quality(quality) {}
 
-inline constexpr Fruit::Fruit(const Fruit& other)
+constexpr Fruit::Fruit(const Fruit& other)
     : fruit_taste(other.fruit_taste),
       fruit_size(other.fruit_size),
       fruit_quality(other.fruit_quality) {}
 
-inline constexpr Fruit::Fruit(std::tuple<Taste, Size, Quality> tpl)
+constexpr Fruit::Fruit(std::tuple<Taste, Size, Quality> tpl)
     : fruit_taste(std::get<0>(tpl)),
       fruit_size(std::get<1>(tpl)),
       fruit_quality(std::get<2>(tpl)) {}
