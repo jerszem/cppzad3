@@ -5,7 +5,9 @@
 #include <compare>
 #include <deque>
 #include <iostream>
+#include <functional>
 #include <queue>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -28,11 +30,8 @@ class Fruit {
     constexpr Size size() const { return fruit_size; }
     constexpr Quality quality() const { return fruit_quality; }
     constexpr bool operator==(const Fruit& other) const = default;
-
-    // dodajemy konwersję do tuple jeśli w przykładzie używasz:
-    // using fruit_tuple_t = std::tuple<Taste, Size, Quality>;
     inline operator std::tuple<Taste, Size, Quality>() const {
-        return {taste(), size(), quality()};  // użyj właściwych getterów/pól
+        return {taste(), size(), quality()};
     }
     friend std::ostream& operator<<(std::ostream& os, const Fruit& fruit);
 
@@ -50,37 +49,28 @@ class Picker {
     std::size_t count_taste(Taste taste) const;
     std::size_t count_size(Size size) const;
     std::size_t count_quality(Quality quality) const;
-    // We add a picked fruit to the picker.
-    // If it was healthy, it turns rotten if the last picked fruit was rotten;
-    // if it was rotten and the previous one was healthy, the previous one turns
-    // rotten too. If it was wormy, then all previously picked healthy and sweet
-    // fruits become wormy.
     Picker& operator+=(const Fruit& fruit);
-    // We steal the first picked fruit from other picker
     Picker& operator+=(Picker& other);
     Picker& operator-=(Picker& other);
     bool operator==(const Picker& other) const;
-    // We first compare by number of healthy fruits, then sweet fruits, then
-    // big, large, small, all fruits.
     auto operator<=>(const Picker& other) const;
     friend std::ostream& operator<<(std::ostream& os, const Picker& picker);
 
    private:
     std::string picker_name;
     std::deque<Fruit> collected_fruits;
-    // We remember the last wormy fruit picked to infect healthy sweet fruits
     std::deque<Fruit>::size_type last_wormy_index =
         std::deque<Fruit>::size_type(-1);
     void adjust_index_after_pop_front();
+    void handle_rot_between_last_two();
+    void handle_worm_infection();
 };
 
 class Ranking {
    public:
     Ranking() = default;
     Ranking(const Ranking& other);
-    Ranking& operator=(const Ranking& other) =
-        default;  // <- dodane, aby pozbyć się ostrzeżenia
-    // Initialize Ranking with a list of Pickers
+    Ranking& operator=(const Ranking& other) = default;
     Ranking(const std::initializer_list<Picker>& pickers_list);
     std::size_t count_pickers() const { return pickers.size(); };
     friend std::ostream& operator<<(std::ostream& os, const Ranking& ranking);
@@ -91,7 +81,6 @@ class Ranking {
     const Picker& operator[](std::size_t index) const;
 
    private:
-    // Sorted by best picker first
     std::vector<Picker> pickers;
 };
 
@@ -158,33 +147,18 @@ inline Picker::Picker(std::string_view name)
     : picker_name(name.empty() ? DEFAULT_PICKER_NAME : std::string(name)) {}
 
 inline std::size_t Picker::count_taste(Taste taste) const {
-    std::size_t count = 0;
-    for (const auto& fruit : collected_fruits) {
-        if (fruit.taste() == taste) {
-            ++count;
-        }
-    }
-    return count;
+    return std::count_if(collected_fruits.begin(), collected_fruits.end(),
+                         [taste](const auto& fruit) { return fruit.taste() == taste; });
 }
 
 inline std::size_t Picker::count_size(Size size) const {
-    std::size_t count = 0;
-    for (const auto& fruit : collected_fruits) {
-        if (fruit.size() == size) {
-            ++count;
-        }
-    }
-    return count;
+    return std::count_if(collected_fruits.begin(), collected_fruits.end(),
+                         [size](const auto& fruit) { return fruit.size() == size; });
 }
 
 inline std::size_t Picker::count_quality(Quality quality) const {
-    std::size_t count = 0;
-    for (const auto& fruit : collected_fruits) {
-        if (fruit.quality() == quality) {
-            ++count;
-        }
-    }
-    return count;
+    return std::count_if(collected_fruits.begin(), collected_fruits.end(),
+                         [quality](const auto& fruit) { return fruit.quality() == quality; });
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Picker& picker) {
@@ -196,109 +170,116 @@ inline std::ostream& operator<<(std::ostream& os, const Picker& picker) {
 }
 
 inline bool Picker::operator==(const Picker& other) const {
-    if (picker_name != other.picker_name ||
-        collected_fruits.size() != other.collected_fruits.size()) {
-        return false;
-    }
-    for (size_t i = 0; i < collected_fruits.size(); ++i) {
-        if (!(collected_fruits[i] == other.collected_fruits[i])) {
-            return false;
-        }
-    }
-    return true;
+return picker_name == other.picker_name &&
+       std::equal(collected_fruits.begin(), collected_fruits.end(),
+                  other.collected_fruits.begin());
 }
 
 inline Picker& Picker::operator+=(const Fruit& fruit) {
     collected_fruits.push_back(fruit);
-    auto npos = std::deque<Fruit>::size_type(-1);
-    auto new_idx = collected_fruits.size() - 1;
-
-    // istniejąca logika gnicia między dwoma ostatnimi owocami
-    if (collected_fruits.size() >= 2) {
-        Fruit& last = collected_fruits.back();
-        Fruit& second_last = collected_fruits[collected_fruits.size() - 2];
-        if (last.quality() == Quality::ROTTEN &&
-            second_last.quality() == Quality::HEALTHY) {
-            second_last.go_rotten();
-        } else if (last.quality() == Quality::HEALTHY &&
-                   second_last.quality() == Quality::ROTTEN) {
-            last.go_rotten();
-        }
-    }
-
-    // jeśli nowy owoc jest robaczywy — infekujemy tylko owoce dodane po
-    // poprzednim robaczym
-    if (collected_fruits[new_idx].quality() == Quality::WORMY) {
-        std::deque<Fruit>::size_type start =
-            (last_wormy_index == npos) ? 0 : (last_wormy_index + 1);
-        for (auto i = start; i < new_idx; ++i) {
-            if (collected_fruits[i].quality() == Quality::HEALTHY &&
-                collected_fruits[i].taste() == Taste::SWEET) {
-                collected_fruits[i].become_worm_infested();
-            }
-        }
-        last_wormy_index = new_idx;
-    }
-
+    handle_rot_between_last_two();
+    handle_worm_infection();
     return *this;
 }
 
+inline void Picker::handle_rot_between_last_two() {
+    if (collected_fruits.size() < 2) return;
+
+    Fruit& last = collected_fruits.back();
+    Fruit& second_last = collected_fruits[collected_fruits.size() - 2];
+
+    if (last.quality() == Quality::ROTTEN && second_last.quality() == Quality::HEALTHY) {
+        second_last.go_rotten();
+    } else if (last.quality() == Quality::HEALTHY && second_last.quality() == Quality::ROTTEN) {
+        last.go_rotten();
+    }
+}
+
+inline void Picker::handle_worm_infection() {
+    if (collected_fruits.empty()) return;
+
+    static constexpr std::deque<Fruit>::size_type no_worm_index = -1;
+    auto new_idx = collected_fruits.size() - 1;
+
+    if (collected_fruits[new_idx].quality() != Quality::WORMY) return;
+
+    auto start = (last_wormy_index == no_worm_index) ? 0 : last_wormy_index + 1;
+
+    auto subrange = collected_fruits | std::views::drop(start) | std::views::take(new_idx - start);
+
+    std::ranges::for_each(subrange, [](Fruit& f){
+        if (f.quality() == Quality::HEALTHY && f.taste() == Taste::SWEET) {
+            f.become_worm_infested();
+        }
+    });
+
+    last_wormy_index = new_idx;
+}
+
 inline Picker& Picker::operator-=(Picker& other) {
-    other += *this;
+    if (collected_fruits.empty()) return *this;
+
+    Fruit stolen_fruit = collected_fruits.front();
+    collected_fruits.pop_front();
+    adjust_index_after_pop_front();
+    other += stolen_fruit;
+
     return *this;
 }
 
 inline Picker& Picker::operator+=(Picker& other) {
-    if (!other.collected_fruits.empty()) {
-        Fruit stolen_fruit = other.collected_fruits.front();
-        other.collected_fruits.pop_front();
-        other.adjust_index_after_pop_front();
-        *this += stolen_fruit;
-    }
+    if (other.collected_fruits.empty()) return *this;
+
+    Fruit stolen_fruit = other.collected_fruits.front();
+    other.collected_fruits.pop_front();
+    other.adjust_index_after_pop_front();
+
+    *this += stolen_fruit;
+    
     return *this;
 }
 
 inline auto Picker::operator<=>(const Picker& other) const {
-    // Who has more is smaller
-    if (count_quality(Quality::HEALTHY) !=
-        other.count_quality(Quality::HEALTHY)) {
-        return other.count_quality(Quality::HEALTHY) <=>
-               count_quality(Quality::HEALTHY);
+    using CountFn = std::function<std::size_t(const Picker&)>;
+
+    CountFn fns[] = {
+        [](const Picker& p){ return p.count_quality(Quality::HEALTHY); },
+        [](const Picker& p){ return p.count_taste(Taste::SWEET); },
+        [](const Picker& p){ return p.count_size(Size::LARGE); },
+        [](const Picker& p){ return p.count_size(Size::MEDIUM); },
+        [](const Picker& p){ return p.count_size(Size::SMALL); },
+        [](const Picker& p){ return p.count_fruits(); }
+    };
+
+    for (auto& fn : fns) {
+        auto lhs = fn(*this);
+        auto rhs = fn(other);
+        if (lhs != rhs) return rhs <=> lhs;
     }
-    if (count_taste(Taste::SWEET) != other.count_taste(Taste::SWEET)) {
-        return other.count_taste(Taste::SWEET) <=> count_taste(Taste::SWEET);
-    }
-    if (count_size(Size::LARGE) != other.count_size(Size::LARGE)) {
-        return other.count_size(Size::LARGE) <=> count_size(Size::LARGE);
-    }
-    if (count_size(Size::MEDIUM) != other.count_size(Size::MEDIUM)) {
-        return other.count_size(Size::MEDIUM) <=> count_size(Size::MEDIUM);
-    }
-    if (count_size(Size::SMALL) != other.count_size(Size::SMALL)) {
-        return other.count_size(Size::SMALL) <=> count_size(Size::SMALL);
-    }
-    return other.count_fruits() <=> count_fruits();
+
+    return std::strong_ordering::equal;
 }
 
 inline void Picker::adjust_index_after_pop_front() {
-    auto npos = std::deque<Fruit>::size_type(-1);
-    if (last_wormy_index == npos) return;
-    if (last_wormy_index == 0)
-        last_wormy_index = npos;
-    else
-        --last_wormy_index;
+    const auto npos = std::deque<Fruit>::size_type(-1);
+
+    if (last_wormy_index == npos) {
+        return;
+    }
+
+    last_wormy_index = (last_wormy_index == 0) ? npos : last_wormy_index - 1;
 }
 
 inline Ranking::Ranking(const Ranking& other) : pickers(other.pickers) {}
 
 inline Ranking::Ranking(const std::initializer_list<Picker>& pickers_list) {
     pickers = std::vector<Picker>(pickers_list);
-    std::sort(pickers.begin(), pickers.end(), std::less<Picker>());
+    std::stable_sort(pickers.begin(), pickers.end(), std::less<Picker>());
 }
 
 inline Ranking& Ranking::operator+=(const Picker& picker) {
     pickers.push_back(picker);
-    std::sort(pickers.begin(), pickers.end(), std::less<Picker>());
+    std::stable_sort(pickers.begin(), pickers.end(), std::less<Picker>());
     return *this;
 }
 
@@ -330,11 +311,24 @@ inline Ranking& Ranking::operator-=(const Picker& picker) {
 }
 
 inline Ranking& Ranking::operator+=(const Ranking& other) {
-    std::vector<Picker> new_pickers;
-    new_pickers.reserve(pickers.size() + other.pickers.size());
-    std::merge(pickers.begin(), pickers.end(), other.pickers.begin(),
-               other.pickers.end(), std::back_inserter(new_pickers));
-    pickers = std::move(new_pickers);
+    std::vector<Picker> merged;
+    merged.reserve(pickers.size() + other.pickers.size());
+
+    auto it1 = pickers.begin();
+    auto it2 = other.pickers.begin();
+
+    while (it1 != pickers.end() && it2 != other.pickers.end()) {
+        if (*it2 < *it1) {
+            merged.push_back(*it2++);
+        } else {
+            merged.push_back(*it1++);
+        }
+    }
+
+    merged.insert(merged.end(), it1, pickers.end());
+    merged.insert(merged.end(), it2, other.pickers.end());
+    
+    pickers = std::move(merged);
     return *this;
 }
 
