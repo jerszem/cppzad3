@@ -88,7 +88,6 @@ class Ranking {
     Ranking& operator-=(const Picker& picker);
     Ranking& operator+=(const Ranking& other);
     Ranking operator+(const Ranking& other) const;
-    Picker& operator[](std::size_t index);
     const Picker& operator[](std::size_t index) const;
 
    private:
@@ -303,16 +302,12 @@ inline Ranking& Ranking::operator+=(const Picker& picker) {
     return *this;
 }
 
-inline Picker& Ranking::operator[](std::size_t index) {
-    if (index >= pickers.size()) {
-        throw std::out_of_range("Index out of range");
-    }
-    return pickers[index];
-}
-
 inline const Picker& Ranking::operator[](std::size_t index) const {
+    if (pickers.empty()) {
+        throw std::out_of_range("Ranking is empty");
+    }
     if (index >= pickers.size()) {
-        throw std::out_of_range("Index out of range");
+        return pickers.back();
     }
     return pickers[index];
 }
