@@ -21,16 +21,18 @@ enum class Quality { HEALTHY, ROTTEN, WORMY };
 
 class Fruit {
    public:
-    constexpr Fruit(Taste taste, Size size, Quality quality);
+    explicit constexpr Fruit(Taste taste, Size size, Quality quality);
     constexpr Fruit(const Fruit& other);
-    constexpr Fruit(std::tuple<Taste, Size, Quality>);
+    explicit constexpr Fruit(std::tuple<Taste, Size, Quality>);
+    constexpr Fruit& operator=(const Fruit&) = default;
+    constexpr Fruit& operator=(Fruit&&) = default;
     void go_rotten();
     void become_worm_infested();
     constexpr Taste taste() const { return fruit_taste; }
     constexpr Size size() const { return fruit_size; }
     constexpr Quality quality() const { return fruit_quality; }
     constexpr bool operator==(const Fruit& other) const = default;
-    inline operator std::tuple<Taste, Size, Quality>() const {
+    inline explicit operator std::tuple<Taste, Size, Quality>() const {
         return {taste(), size(), quality()};
     }
     friend std::ostream& operator<<(std::ostream& os, const Fruit& fruit);
