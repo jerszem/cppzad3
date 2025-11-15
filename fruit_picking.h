@@ -32,7 +32,7 @@ class Fruit {
     constexpr Size size() const { return fruit_size; }
     constexpr Quality quality() const { return fruit_quality; }
     constexpr bool operator==(const Fruit& other) const = default;
-    inline explicit operator std::tuple<Taste, Size, Quality>() const {
+    constexpr explicit operator std::tuple<Taste, Size, Quality>() const {
         return {taste(), size(), quality()};
     }
     friend std::ostream& operator<<(std::ostream& os, const Fruit& fruit);
