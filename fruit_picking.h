@@ -172,9 +172,9 @@ inline std::ostream& operator<<(std::ostream& os, const Picker& picker) {
 }
 
 inline bool Picker::operator==(const Picker& other) const {
-return picker_name == other.picker_name &&
-       std::equal(collected_fruits.begin(), collected_fruits.end(),
-                  other.collected_fruits.begin());
+    return picker_name == other.picker_name &&
+           std::equal(collected_fruits.begin(), collected_fruits.end(),
+                      other.collected_fruits.begin(), other.collected_fruits.end());
 }
 
 inline Picker& Picker::operator+=(const Fruit& fruit) {
