@@ -52,9 +52,15 @@ class Picker {
     std::size_t count_taste(Taste taste) const;
     std::size_t count_size(Size size) const;
     std::size_t count_quality(Quality quality) const;
+    
     Picker& operator+=(const Fruit& fruit);
+    
     Picker& operator+=(Picker& other);
+    Picker& operator+=(Picker&& other); 
+
     Picker& operator-=(Picker& other);
+    Picker& operator-=(Picker&& other);
+
     bool operator==(const Picker& other) const;
     auto operator<=>(const Picker& other) const;
     friend std::ostream& operator<<(std::ostream& os, const Picker& picker);
@@ -72,15 +78,24 @@ class Picker {
 class Ranking {
    public:
     Ranking() = default;
-    Ranking(const Ranking& other);
-    Ranking& operator=(const Ranking& other) = default;
+    Ranking(const Ranking&) = default;
+    Ranking(Ranking&&) noexcept = default;
+
+    Ranking& operator=(const Ranking&) = default;
+    Ranking& operator=(Ranking&&) noexcept = default;
+
     Ranking(const std::initializer_list<Picker>& pickers_list);
     std::size_t count_pickers() const { return pickers.size(); };
     friend std::ostream& operator<<(std::ostream& os, const Ranking& ranking);
+    
+    Ranking& operator+=(const Ranking& other);
+    Ranking& operator+=(Ranking&& other);
+
     Ranking& operator+=(const Picker& picker);
     Ranking& operator-=(const Picker& picker);
-    Ranking& operator+=(const Ranking& other);
+    
     Ranking operator+(const Ranking& other) const;
+    
     const Picker& operator[](std::size_t index) const;
 
    private:
@@ -229,6 +244,7 @@ inline void Picker::handle_worm_infection() {
 }
 
 inline Picker& Picker::operator-=(Picker& other) {
+    if (&other == this) return *this;
     if (collected_fruits.empty()) return *this;
 
     Fruit stolen_fruit = collected_fruits.front();
@@ -240,6 +256,7 @@ inline Picker& Picker::operator-=(Picker& other) {
 }
 
 inline Picker& Picker::operator+=(Picker& other) {
+    if (&other == this) return *this;
     if (other.collected_fruits.empty()) return *this;
 
     Fruit stolen_fruit = other.collected_fruits.front();
@@ -248,6 +265,14 @@ inline Picker& Picker::operator+=(Picker& other) {
 
     *this += stolen_fruit;
 
+    return *this;
+}
+
+inline Picker& Picker::operator+=(Picker&&) {
+    return *this;
+}
+
+inline Picker& Picker::operator-=(Picker&&) {
     return *this;
 }
 
@@ -281,8 +306,6 @@ inline void Picker::adjust_index_after_pop_front() {
     last_wormy_index = (last_wormy_index == 0) ? npos : last_wormy_index - 1;
 }
 
-inline Ranking::Ranking(const Ranking& other) : pickers(other.pickers) {}
-
 inline Ranking::Ranking(const std::initializer_list<Picker>& pickers_list) {
     pickers = std::vector<Picker>(pickers_list);
     std::stable_sort(pickers.begin(), pickers.end(), std::less<Picker>());
@@ -291,6 +314,10 @@ inline Ranking::Ranking(const std::initializer_list<Picker>& pickers_list) {
 inline Ranking& Ranking::operator+=(const Picker& picker) {
     pickers.push_back(picker);
     std::stable_sort(pickers.begin(), pickers.end(), std::less<Picker>());
+    return *this;
+}
+
+inline Ranking& Ranking::operator+=(Ranking&&) {
     return *this;
 }
 
