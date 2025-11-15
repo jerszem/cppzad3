@@ -52,11 +52,11 @@ class Picker {
     std::size_t count_taste(Taste taste) const;
     std::size_t count_size(Size size) const;
     std::size_t count_quality(Quality quality) const;
-    
+
     Picker& operator+=(const Fruit& fruit);
-    
+
     Picker& operator+=(Picker& other);
-    Picker& operator+=(Picker&& other); 
+    Picker& operator+=(Picker&& other);
 
     Picker& operator-=(Picker& other);
     Picker& operator-=(Picker&& other);
@@ -87,15 +87,15 @@ class Ranking {
     Ranking(const std::initializer_list<Picker>& pickers_list);
     std::size_t count_pickers() const { return pickers.size(); };
     friend std::ostream& operator<<(std::ostream& os, const Ranking& ranking);
-    
+
     Ranking& operator+=(const Ranking& other);
     Ranking& operator+=(Ranking&& other);
 
     Ranking& operator+=(const Picker& picker);
     Ranking& operator-=(const Picker& picker);
-    
+
     Ranking operator+(const Ranking& other) const;
-    
+
     const Picker& operator[](std::size_t index) const;
 
    private:
@@ -181,8 +181,7 @@ inline std::ostream& operator<<(std::ostream& os, const Picker& picker) {
     os << picker.picker_name << ":";
 
     const auto& fruits = picker.collected_fruits;
-    if (fruits.empty())
-        return os;
+    if (fruits.empty()) return os;
 
     os << "\n\t" << fruits[0];
 
@@ -196,7 +195,8 @@ inline std::ostream& operator<<(std::ostream& os, const Picker& picker) {
 inline bool Picker::operator==(const Picker& other) const {
     return picker_name == other.picker_name &&
            std::equal(collected_fruits.begin(), collected_fruits.end(),
-                      other.collected_fruits.begin(), other.collected_fruits.end());
+                      other.collected_fruits.begin(),
+                      other.collected_fruits.end());
 }
 
 inline Picker& Picker::operator+=(const Fruit& fruit) {
@@ -268,13 +268,9 @@ inline Picker& Picker::operator+=(Picker& other) {
     return *this;
 }
 
-inline Picker& Picker::operator+=(Picker&&) {
-    return *this;
-}
+inline Picker& Picker::operator+=(Picker&&) { return *this; }
 
-inline Picker& Picker::operator-=(Picker&&) {
-    return *this;
-}
+inline Picker& Picker::operator-=(Picker&&) { return *this; }
 
 inline auto Picker::operator<=>(const Picker& other) const {
     using CountFn = std::function<std::size_t(const Picker&)>;
@@ -317,9 +313,7 @@ inline Ranking& Ranking::operator+=(const Picker& picker) {
     return *this;
 }
 
-inline Ranking& Ranking::operator+=(Ranking&&) {
-    return *this;
-}
+inline Ranking& Ranking::operator+=(Ranking&&) { return *this; }
 
 inline const Picker& Ranking::operator[](std::size_t index) const {
     if (pickers.empty()) {
@@ -332,8 +326,7 @@ inline const Picker& Ranking::operator[](std::size_t index) const {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Ranking& ranking) {
-    if (ranking.pickers.empty())
-        return os;
+    if (ranking.pickers.empty()) return os;
 
     os << ranking.pickers[0];
 
@@ -344,7 +337,6 @@ inline std::ostream& operator<<(std::ostream& os, const Ranking& ranking) {
     os << "\n";
     return os;
 }
-
 
 inline Ranking& Ranking::operator-=(const Picker& picker) {
     auto it = std::find(pickers.begin(), pickers.end(), picker);
