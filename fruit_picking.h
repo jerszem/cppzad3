@@ -305,11 +305,19 @@ inline const Picker& Ranking::operator[](std::size_t index) const {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Ranking& ranking) {
-    for (const auto& picker : ranking.pickers) {
-        os << picker;
+    if (ranking.pickers.empty())
+        return os;
+
+    os << ranking.pickers[0];
+
+    for (size_t i = 1; i < ranking.pickers.size(); ++i) {
+        os << "\n" << ranking.pickers[i];
     }
+
+    os << "\n";
     return os;
 }
+
 
 inline Ranking& Ranking::operator-=(const Picker& picker) {
     auto it = std::find(pickers.begin(), pickers.end(), picker);
