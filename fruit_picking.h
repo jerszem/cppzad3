@@ -21,7 +21,7 @@ enum class Quality { HEALTHY, ROTTEN, WORMY };
 class Fruit {
    public:
     explicit constexpr Fruit(Taste taste, Size size, Quality quality);
-    constexpr Fruit(const Fruit& other);
+    constexpr Fruit(const Fruit& other) = default;
     explicit constexpr Fruit(std::tuple<Taste, Size, Quality>);
     constexpr Fruit& operator=(const Fruit&) = default;
     constexpr Fruit& operator=(Fruit&&) = default;
@@ -87,11 +87,6 @@ class Ranking {
 
 constexpr Fruit::Fruit(Taste taste, Size size, Quality quality)
     : fruit_taste(taste), fruit_size(size), fruit_quality(quality) {}
-
-constexpr Fruit::Fruit(const Fruit& other)
-    : fruit_taste(other.fruit_taste),
-      fruit_size(other.fruit_size),
-      fruit_quality(other.fruit_quality) {}
 
 constexpr Fruit::Fruit(std::tuple<Taste, Size, Quality> tpl)
     : fruit_taste(std::get<0>(tpl)),
