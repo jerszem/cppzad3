@@ -4,8 +4,9 @@
 #include <algorithm>
 #include <compare>
 #include <deque>
-#include <iostream>
 #include <functional>
+#include <iostream>
+#include <queue>
 #include <ranges>
 #include <string>
 #include <vector>
@@ -144,18 +145,21 @@ inline Picker::Picker(std::string_view name)
     : picker_name(name.empty() ? DEFAULT_PICKER_NAME : std::string(name)) {}
 
 inline std::size_t Picker::count_taste(Taste taste) const {
-    return std::count_if(collected_fruits.begin(), collected_fruits.end(),
-                         [taste](const auto& fruit) { return fruit.taste() == taste; });
+    return std::count_if(
+        collected_fruits.begin(), collected_fruits.end(),
+        [taste](const auto& fruit) { return fruit.taste() == taste; });
 }
 
 inline std::size_t Picker::count_size(Size size) const {
-    return std::count_if(collected_fruits.begin(), collected_fruits.end(),
-                         [size](const auto& fruit) { return fruit.size() == size; });
+    return std::count_if(
+        collected_fruits.begin(), collected_fruits.end(),
+        [size](const auto& fruit) { return fruit.size() == size; });
 }
 
 inline std::size_t Picker::count_quality(Quality quality) const {
-    return std::count_if(collected_fruits.begin(), collected_fruits.end(),
-                         [quality](const auto& fruit) { return fruit.quality() == quality; });
+    return std::count_if(
+        collected_fruits.begin(), collected_fruits.end(),
+        [quality](const auto& fruit) { return fruit.quality() == quality; });
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Picker& picker) {
@@ -185,9 +189,11 @@ inline void Picker::handle_rot_between_last_two() {
     Fruit& last = collected_fruits.back();
     Fruit& second_last = collected_fruits[collected_fruits.size() - 2];
 
-    if (last.quality() == Quality::ROTTEN && second_last.quality() == Quality::HEALTHY) {
+    if (last.quality() == Quality::ROTTEN &&
+        second_last.quality() == Quality::HEALTHY) {
         second_last.go_rotten();
-    } else if (last.quality() == Quality::HEALTHY && second_last.quality() == Quality::ROTTEN) {
+    } else if (last.quality() == Quality::HEALTHY &&
+               second_last.quality() == Quality::ROTTEN) {
         last.go_rotten();
     }
 }
@@ -202,9 +208,10 @@ inline void Picker::handle_worm_infection() {
 
     auto start = (last_wormy_index == no_worm_index) ? 0 : last_wormy_index + 1;
 
-    auto subrange = collected_fruits | std::views::drop(start) | std::views::take(new_idx - start);
+    auto subrange = collected_fruits | std::views::drop(start) |
+                    std::views::take(new_idx - start);
 
-    std::ranges::for_each(subrange, [](Fruit& f){
+    std::ranges::for_each(subrange, [](Fruit& f) {
         if (f.quality() == Quality::HEALTHY && f.taste() == Taste::SWEET) {
             f.become_worm_infested();
         }
@@ -232,7 +239,7 @@ inline Picker& Picker::operator+=(Picker& other) {
     other.adjust_index_after_pop_front();
 
     *this += stolen_fruit;
-    
+
     return *this;
 }
 
@@ -240,13 +247,12 @@ inline auto Picker::operator<=>(const Picker& other) const {
     using CountFn = std::function<std::size_t(const Picker&)>;
 
     CountFn fns[] = {
-        [](const Picker& p){ return p.count_quality(Quality::HEALTHY); },
-        [](const Picker& p){ return p.count_taste(Taste::SWEET); },
-        [](const Picker& p){ return p.count_size(Size::LARGE); },
-        [](const Picker& p){ return p.count_size(Size::MEDIUM); },
-        [](const Picker& p){ return p.count_size(Size::SMALL); },
-        [](const Picker& p){ return p.count_fruits(); }
-    };
+        [](const Picker& p) { return p.count_quality(Quality::HEALTHY); },
+        [](const Picker& p) { return p.count_taste(Taste::SWEET); },
+        [](const Picker& p) { return p.count_size(Size::LARGE); },
+        [](const Picker& p) { return p.count_size(Size::MEDIUM); },
+        [](const Picker& p) { return p.count_size(Size::SMALL); },
+        [](const Picker& p) { return p.count_fruits(); }};
 
     for (auto& fn : fns) {
         auto lhs = fn(*this);
@@ -320,7 +326,7 @@ inline Ranking& Ranking::operator+=(const Ranking& other) {
 
     merged.insert(merged.end(), it1, pickers.end());
     merged.insert(merged.end(), it2, other.pickers.end());
-    
+
     pickers = std::move(merged);
     return *this;
 }
