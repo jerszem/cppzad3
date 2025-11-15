@@ -164,9 +164,17 @@ inline std::size_t Picker::count_quality(Quality quality) const {
 
 inline std::ostream& operator<<(std::ostream& os, const Picker& picker) {
     os << picker.picker_name << ":";
-    for (const auto& fruit : picker.collected_fruits) {
-        os << "\n\t" << fruit;
+
+    const auto& fruits = picker.collected_fruits;
+    if (fruits.empty())
+        return os;
+
+    os << "\n\t" << fruits[0];
+
+    for (size_t i = 1; i < fruits.size(); ++i) {
+        os << "\n\t" << fruits[i];
     }
+
     return os;
 }
 
