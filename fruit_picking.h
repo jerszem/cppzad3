@@ -303,12 +303,8 @@ inline std::ostream& operator<<(std::ostream& os, const Ranking& ranking) {
 }
 
 inline Ranking& Ranking::operator-=(const Picker& picker) {
-    for (const auto& current : pickers) {
-        if (current == picker) {
-            pickers.erase(std::remove(pickers.begin(), pickers.end(), current),
-                          pickers.end());
-        }
-    }
+    auto it = std::find(pickers.begin(), pickers.end(), picker);
+    if (it != pickers.end()) pickers.erase(it);
     return *this;
 }
 
