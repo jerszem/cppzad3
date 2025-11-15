@@ -25,6 +25,7 @@ class Fruit {
     explicit constexpr Fruit(std::tuple<Taste, Size, Quality>);
     constexpr Fruit& operator=(const Fruit&) = default;
     constexpr Fruit& operator=(Fruit&&) = default;
+    constexpr Fruit(Fruit&&) = default;
     void go_rotten();
     void become_worm_infested();
     constexpr Taste taste() const { return fruit_taste; }
