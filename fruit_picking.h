@@ -234,32 +234,32 @@ inline Picker& Picker::operator+=(const Fruit& fruit) {
 
     switch (fruit.quality()) {
         case Quality::HEALTHY:
-            healthy_count++;
+            ++healthy_count;
             break;
         case Quality::WORMY:
-            wormy_count++;
+            ++wormy_count;
             break;
         case Quality::ROTTEN:
-            rotten_count++;
+            ++rotten_count;
             break;
     }
     switch (fruit.taste()) {
         case Taste::SWEET:
-            sweet_count++;
+            ++sweet_count;
             break;
         case Taste::SOUR:
-            sour_count++;
+            ++sour_count;
             break;
     }
     switch (fruit.size()) {
         case Size::LARGE:
-            large_count++;
+            ++large_count;
             break;
         case Size::MEDIUM:
-            medium_count++;
+            ++medium_count;
             break;
         case Size::SMALL:
-            small_count++;
+            ++small_count;
             break;
     }
 
@@ -271,32 +271,32 @@ inline Picker& Picker::operator+=(const Fruit& fruit) {
 inline void Picker::decrement_counters_for(const Fruit& f) {
     switch (f.quality()) {
         case Quality::HEALTHY:
-            healthy_count--;
+            --healthy_count;
             break;
         case Quality::WORMY:
-            wormy_count--;
+            --wormy_count;
             break;
         case Quality::ROTTEN:
-            rotten_count--;
+            --rotten_count;
             break;
     }
     switch (f.taste()) {
         case Taste::SWEET:
-            sweet_count--;
+            --sweet_count;
             break;
         case Taste::SOUR:
-            sour_count--;
+            --sour_count;
             break;
     }
     switch (f.size()) {
         case Size::LARGE:
-            large_count--;
+            --large_count;
             break;
         case Size::MEDIUM:
-            medium_count--;
+            --medium_count;
             break;
         case Size::SMALL:
-            small_count--;
+            --small_count;
             break;
     }
 }
@@ -309,14 +309,14 @@ inline void Picker::handle_rot_between_last_two() {
 
     if (last.quality() == Quality::ROTTEN &&
         second_last.quality() == Quality::HEALTHY) {
-        healthy_count--;
-        rotten_count++;
+        --healthy_count;
+        ++rotten_count;
 
         second_last.go_rotten();
     } else if (last.quality() == Quality::HEALTHY &&
                second_last.quality() == Quality::ROTTEN) {
-        healthy_count--;
-        rotten_count++;
+        --healthy_count;
+        ++rotten_count;
 
         last.go_rotten();
     }
@@ -339,8 +339,8 @@ inline void Picker::handle_worm_infection() {
         if (f.quality() == Quality::HEALTHY && f.taste() == Taste::SWEET) {
             f.become_worm_infested();
 
-            healthy_count--;
-            wormy_count++;
+            --healthy_count;
+            ++wormy_count;
         }
     });
 
@@ -376,10 +376,13 @@ inline Picker& Picker::operator+=(Picker& other) {
     return *this;
 }
 
+inline Picker& Picker::operator+=(Picker&& other) {
+    return *this += other;
+}
 
-inline Picker& Picker::operator+=(Picker&&) { return *this; }
-
-inline Picker& Picker::operator-=(Picker&&) { return *this; }
+inline Picker& Picker::operator-=(Picker&& other) {
+    return *this -= other;
+}
 
 inline auto Picker::operator<=>(const Picker& other) const {
     using CountFn = std::function<std::size_t(const Picker&)>;
