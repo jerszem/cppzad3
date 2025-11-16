@@ -68,11 +68,25 @@ class Picker {
    private:
     std::string picker_name;
     std::deque<Fruit> collected_fruits;
+
+    std::size_t healthy_count = 0;
+    std::size_t wormy_count = 0;
+    std::size_t rotten_count = 0;
+
+    std::size_t sweet_count = 0;
+    std::size_t sour_count = 0;
+
+    std::size_t large_count = 0;
+    std::size_t medium_count = 0;
+    std::size_t small_count = 0;
+
     std::deque<Fruit>::size_type last_wormy_index =
         std::deque<Fruit>::size_type(-1);
     void adjust_index_after_pop_front();
     void handle_rot_between_last_two();
     void handle_worm_infection();
+
+    void decrement_counters_for(const Fruit& f);
 };
 
 class Ranking {
@@ -159,22 +173,38 @@ inline std::ostream& operator<<(std::ostream& os, const Fruit& fruit) {
 inline Picker::Picker(std::string_view name)
     : picker_name(name.empty() ? DEFAULT_PICKER_NAME : std::string(name)) {}
 
-inline std::size_t Picker::count_taste(Taste taste) const {
-    return std::count_if(
-        collected_fruits.begin(), collected_fruits.end(),
-        [taste](const auto& fruit) { return fruit.taste() == taste; });
+inline std::size_t Picker::count_taste(Taste t) const {
+    switch (t) {
+        case Taste::SWEET:
+            return sweet_count;
+        case Taste::SOUR:
+            return sour_count;
+    }
+    return 0;
 }
 
-inline std::size_t Picker::count_size(Size size) const {
-    return std::count_if(
-        collected_fruits.begin(), collected_fruits.end(),
-        [size](const auto& fruit) { return fruit.size() == size; });
+inline std::size_t Picker::count_size(Size s) const {
+    switch (s) {
+        case Size::LARGE:
+            return large_count;
+        case Size::MEDIUM:
+            return medium_count;
+        case Size::SMALL:
+            return small_count;
+    }
+    return 0;
 }
 
-inline std::size_t Picker::count_quality(Quality quality) const {
-    return std::count_if(
-        collected_fruits.begin(), collected_fruits.end(),
-        [quality](const auto& fruit) { return fruit.quality() == quality; });
+inline std::size_t Picker::count_quality(Quality q) const {
+    switch (q) {
+        case Quality::HEALTHY:
+            return healthy_count;
+        case Quality::WORMY:
+            return wormy_count;
+        case Quality::ROTTEN:
+            return rotten_count;
+    }
+    return 0;
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Picker& picker) {
@@ -201,9 +231,74 @@ inline bool Picker::operator==(const Picker& other) const {
 
 inline Picker& Picker::operator+=(const Fruit& fruit) {
     collected_fruits.push_back(fruit);
+
+    switch (fruit.quality()) {
+        case Quality::HEALTHY:
+            healthy_count++;
+            break;
+        case Quality::WORMY:
+            wormy_count++;
+            break;
+        case Quality::ROTTEN:
+            rotten_count++;
+            break;
+    }
+    switch (fruit.taste()) {
+        case Taste::SWEET:
+            sweet_count++;
+            break;
+        case Taste::SOUR:
+            sour_count++;
+            break;
+    }
+    switch (fruit.size()) {
+        case Size::LARGE:
+            large_count++;
+            break;
+        case Size::MEDIUM:
+            medium_count++;
+            break;
+        case Size::SMALL:
+            small_count++;
+            break;
+    }
+
     handle_rot_between_last_two();
     handle_worm_infection();
     return *this;
+}
+
+inline void Picker::decrement_counters_for(const Fruit& f) {
+    switch (f.quality()) {
+        case Quality::HEALTHY:
+            healthy_count--;
+            break;
+        case Quality::WORMY:
+            wormy_count--;
+            break;
+        case Quality::ROTTEN:
+            rotten_count--;
+            break;
+    }
+    switch (f.taste()) {
+        case Taste::SWEET:
+            sweet_count--;
+            break;
+        case Taste::SOUR:
+            sour_count--;
+            break;
+    }
+    switch (f.size()) {
+        case Size::LARGE:
+            large_count--;
+            break;
+        case Size::MEDIUM:
+            medium_count--;
+            break;
+        case Size::SMALL:
+            small_count--;
+            break;
+    }
 }
 
 inline void Picker::handle_rot_between_last_two() {
@@ -214,9 +309,15 @@ inline void Picker::handle_rot_between_last_two() {
 
     if (last.quality() == Quality::ROTTEN &&
         second_last.quality() == Quality::HEALTHY) {
+        healthy_count--;
+        rotten_count++;
+
         second_last.go_rotten();
     } else if (last.quality() == Quality::HEALTHY &&
                second_last.quality() == Quality::ROTTEN) {
+        healthy_count--;
+        rotten_count++;
+
         last.go_rotten();
     }
 }
@@ -234,9 +335,12 @@ inline void Picker::handle_worm_infection() {
     auto subrange = collected_fruits | std::views::drop(start) |
                     std::views::take(new_idx - start);
 
-    std::ranges::for_each(subrange, [](Fruit& f) {
+    std::ranges::for_each(subrange, [this](Fruit& f) {
         if (f.quality() == Quality::HEALTHY && f.taste() == Taste::SWEET) {
             f.become_worm_infested();
+
+            healthy_count--;
+            wormy_count++;
         }
     });
 
@@ -248,6 +352,7 @@ inline Picker& Picker::operator-=(Picker& other) {
     if (collected_fruits.empty()) return *this;
 
     Fruit stolen_fruit = collected_fruits.front();
+    decrement_counters_for(stolen_fruit);
     collected_fruits.pop_front();
     adjust_index_after_pop_front();
     other += stolen_fruit;
@@ -260,6 +365,9 @@ inline Picker& Picker::operator+=(Picker& other) {
     if (other.collected_fruits.empty()) return *this;
 
     Fruit stolen_fruit = other.collected_fruits.front();
+
+    other.decrement_counters_for(stolen_fruit);
+
     other.collected_fruits.pop_front();
     other.adjust_index_after_pop_front();
 
@@ -267,6 +375,7 @@ inline Picker& Picker::operator+=(Picker& other) {
 
     return *this;
 }
+
 
 inline Picker& Picker::operator+=(Picker&&) { return *this; }
 
