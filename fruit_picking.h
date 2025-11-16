@@ -376,9 +376,13 @@ inline Picker& Picker::operator+=(Picker& other) {
     return *this;
 }
 
-inline Picker& Picker::operator+=(Picker&&) { return *this; }
+inline Picker& Picker::operator+=(Picker&& other) {
+    return *this += other;
+}
 
-inline Picker& Picker::operator-=(Picker&&) { return *this; }
+inline Picker& Picker::operator-=(Picker&& other) {
+    return *this -= other;
+}
 
 inline auto Picker::operator<=>(const Picker& other) const {
     using CountFn = std::function<std::size_t(const Picker&)>;
