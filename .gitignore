@@ -1,2 +1,3 @@
-main
 *.o
+example
+tests
