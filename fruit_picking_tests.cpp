@@ -18,6 +18,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <chrono>
 
 using std::cout;
 using std::string;
@@ -615,6 +616,111 @@ void test_picker_class() {
     std::cout << "Testy klasy Picker zakonczone sukcesem.\n";
 }
 
+void test_cmp_progressive() {
+    Picker a{"A"};
+    Picker b{"B"};
+
+    const int n = 12;
+
+    for (int i = 0; i < n; i++) {
+        a += YUMMY_ONE;
+    }
+
+    for (int i = 0; i < n / 2; i++) {
+        assert(a < b);
+        assert(b > a);
+        
+        b += a;
+    }
+
+    assert((a <=> b) == std::strong_ordering::equal);
+    assert((b <=> a) == std::strong_ordering::equal);
+
+    for (int i = 0; i < n / 2; i++) {
+        b += a;
+        
+        assert(a > b);
+        assert(b < a);
+    }
+}
+
+void test_cmp_simple() {
+    Picker a{"A"};
+    Picker b{"B"};
+
+    for (int i = 0; i < 5000; i++) {
+        a += YUMMY_ONE;
+        b += YUMMY_ONE;
+    }
+
+    a += YUMMY_ONE;
+
+    for (int i = 0; i < 10'000; i++) {
+        assert(a < b);
+        assert(b > a);
+    }
+}
+
+void test_picker_add_remove_stability() {
+    Picker a{"A"};
+    Picker b{"B"};
+
+    a += YUMMY_ONE;
+    a += YUMMY_ONE;
+    b += YUMMY_ONE;
+
+    assert((a <=> b) == std::strong_ordering::less);
+
+    b += a;
+    assert((b <=> a) == std::strong_ordering::less);
+
+    a += YUMMY_ONE;
+    assert((a <=> b) == std::strong_ordering::equal);
+}
+
+void test_picker_complex_invariants() {
+    Picker p{"P"};
+
+    p += YUMMY_ONE;  
+    assert(p.count_fruits() == 1);
+    assert(p.count_quality(Quality::HEALTHY) == 1);
+
+    Fruit worm = YUMMY_ONE;
+    worm.become_worm_infested();
+    p += worm;
+
+    assert(p.count_fruits() == 2);
+    assert(p.count_quality(Quality::WORMY) == 2);
+    assert(p.count_quality(Quality::HEALTHY) == 0);
+
+    Fruit rotten = YUMMY_ONE;
+    rotten.go_rotten();
+    p += rotten;
+
+    assert(p.count_fruits() == 3);
+    assert(p.count_quality(Quality::ROTTEN) == 1);
+    assert(p.count_quality(Quality::WORMY) == 2);
+
+    for (int i = 0; i < 1000; i++) {
+        assert((p <=> p) == std::strong_ordering::equal);
+    }
+}
+
+void test_picker_comparison() {
+    using Clock = std::chrono::high_resolution_clock;
+
+    auto start = Clock::now();
+
+    test_cmp_simple();
+    test_picker_add_remove_stability();
+    test_picker_complex_invariants();
+    test_cmp_progressive();
+
+    auto end = Clock::now();
+    std::cout << "Total test_picker_comparison time: "
+              << std::chrono::duration<double, std::milli>(end - start).count()
+              << " ms\n";
+}
 
 void test_ranking_class() {
     std::cout << "Rozpoczynam testy klasy Ranking...\n";
@@ -894,5 +1000,7 @@ int main() {
   MaliciousTests::test_compile_time_properties_with_static_assert();
   cout << "ALL TESTS2 PASSED!\n";
   
+//   Custom tests
+  MaliciousTests::test_picker_comparison();
   return 0;
 }
