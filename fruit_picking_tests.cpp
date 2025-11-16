@@ -620,7 +620,7 @@ void test_cmp_progressive() {
     Picker a{"A"};
     Picker b{"B"};
 
-    const int n = 12;
+    const int n = 100000;
 
     for (int i = 0; i < n; i++) {
         a += YUMMY_ONE;
@@ -648,14 +648,16 @@ void test_cmp_simple() {
     Picker a{"A"};
     Picker b{"B"};
 
-    for (int i = 0; i < 5000; i++) {
+    const int n = 10000;
+
+    for (int i = 0; i < n/2; i++) {
         a += YUMMY_ONE;
         b += YUMMY_ONE;
     }
 
     a += YUMMY_ONE;
 
-    for (int i = 0; i < 10'000; i++) {
+    for (int i = 0; i < n; i++) {
         assert(a < b);
         assert(b > a);
     }
@@ -707,6 +709,7 @@ void test_picker_complex_invariants() {
 }
 
 void test_picker_comparison() {
+    std::cout << "Starting comparison test (if it takes long, comparisons are slow)" << std::endl;
     using Clock = std::chrono::high_resolution_clock;
 
     auto start = Clock::now();
